@@ -1,0 +1,5 @@
+{
+  "name": "WhatsCode Extractor",
+  "description": "Extracts 6-digit codes and sender information from WhatsApp screenshots using Gemini AI, exporting them to clean Excel-ready formats.",
+  "requestFramePermissions": []
+}
