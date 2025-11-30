@@ -58,7 +58,7 @@ export const Uploader: React.FC<UploaderProps> = ({ onImageSelected, isLoading }
             {isLoading ? 'Processing Screenshot...' : 'Drop WhatsApp Screenshot'}
           </p>
           <p className="text-sm text-gray-500">
-            {isLoading ? 'Gemini is reading the messages' : 'or click to browse files'}
+            {isLoading ? 'OCR is reading the messages' : 'or click to browse files'}
           </p>
         </div>
       </div>

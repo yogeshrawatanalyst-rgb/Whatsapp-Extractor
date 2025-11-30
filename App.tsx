@@ -1,10 +1,10 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { LiveMonitor } from './components/LiveMonitor';
 import { ExtractionTable } from './components/ExtractionTable';
 import { Uploader } from './components/Uploader';
 import { ExtractedData, ExtractionStatus } from './types';
-import { extractCodesFromImage, extractCodesFromText } from './services/geminiService';
-import { ShieldAlert, MessageSquareText, FileText, MonitorPlay } from 'lucide-react';
+import { extractDataFromImage, parseTextForCodes, initOCR } from './services/ocrService';
+import { ShieldAlert, MessageSquareText, FileText, MonitorPlay, ScanLine } from 'lucide-react';
 
 const App: React.FC = () => {
   const [data, setData] = useState<ExtractedData[]>([]);
@@ -15,6 +15,11 @@ const App: React.FC = () => {
   
   // Use a ref to keep track of processed signatures to prevent duplicates during live stream
   const processedSignatures = useRef<Set<string>>(new Set());
+
+  // Initialize OCR worker on mount
+  useEffect(() => {
+    initOCR();
+  }, []);
 
   const handleNewData = (newData: ExtractedData[]) => {
     const uniqueItems: ExtractedData[] = [];
@@ -38,7 +43,7 @@ const App: React.FC = () => {
   const handleFrameCapture = async (base64Image: string) => {
     setStatus(ExtractionStatus.MONITORING);
     try {
-      const results = await extractCodesFromImage(base64Image, 'image/jpeg');
+      const results = await extractDataFromImage(base64Image);
       handleNewData(results);
       // We don't set SUCCESS status here to keep the "Scanning" UI active
       setStatus(ExtractionStatus.IDLE); 
@@ -57,10 +62,9 @@ const App: React.FC = () => {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64String = reader.result as string;
-        const base64Data = base64String.split(',')[1];
-        
+        // extractDataFromImage handles full data URI
         try {
-          const results = await extractCodesFromImage(base64Data, file.type);
+          const results = await extractDataFromImage(base64String);
           handleNewData(results);
           setStatus(ExtractionStatus.SUCCESS);
         } catch (err) {
@@ -81,7 +85,8 @@ const App: React.FC = () => {
     setErrorMsg(null);
 
     try {
-      const results = await extractCodesFromText(textInput);
+      // For manual text, we don't have a header sender, so we label it "Manual Input"
+      const results = parseTextForCodes(textInput, "Manual Input");
       handleNewData(results);
       setStatus(ExtractionStatus.SUCCESS);
       setTextInput('');
@@ -116,12 +121,12 @@ const App: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-900 tracking-tight">WhatsApp Live Extractor</h1>
-              <p className="text-xs text-gray-500 font-medium">Real-time Code Monitor</p>
+              <p className="text-xs text-gray-500 font-medium">Local OCR Code Monitor</p>
             </div>
           </div>
           <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200">
-            <ShieldAlert className="w-4 h-4 text-gray-400" />
-            <span>Secure Client-Side Processing</span>
+            <ScanLine className="w-4 h-4 text-gray-400" />
+            <span>100% Client-Side Processing</span>
           </div>
         </div>
       </header>
